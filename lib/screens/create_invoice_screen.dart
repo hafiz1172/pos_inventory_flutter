@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../data/app_data.dart';
 import '../models/item.dart';
+import '../models/invoice.dart';
 import '../models/invoice_item.dart';
 
 class CreateInvoiceScreen extends StatefulWidget {
@@ -192,6 +193,12 @@ class _CreateInvoiceScreenState
     );
   }
 
+  String generateInvoiceNumber() {
+    final nextNumber = appData.invoices.length + 1;
+
+    return 'INV-${nextNumber.toString().padLeft(4, '0')}';
+  }
+
   void saveInvoice() {
     if (invoiceItems.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -207,17 +214,36 @@ class _CreateInvoiceScreenState
             ? 'Walk-in Customer'
             : customerController.text.trim();
 
+    final invoice = Invoice(
+      id: DateTime.now()
+          .millisecondsSinceEpoch
+          .toString(),
+      invoiceNumber: generateInvoiceNumber(),
+      date: DateTime.now(),
+      customerName: customerName,
+      items: List<InvoiceItem>.from(invoiceItems),
+      discount: discount,
+      paidAmount: grandTotal,
+    );
+
+    setState(() {
+      appData.addInvoice(invoice);
+    });
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Invoice ready — Total: Rs ${grandTotal.toStringAsFixed(0)}',
+          '${invoice.invoiceNumber} saved successfully',
         ),
       ),
     );
 
-    debugPrint(
-      'Invoice for $customerName: Rs ${grandTotal.toStringAsFixed(0)}',
-    );
+    customerController.clear();
+    discountController.clear();
+
+    setState(() {
+      invoiceItems.clear();
+    });
   }
 
   @override
