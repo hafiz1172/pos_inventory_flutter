@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../data/app_data.dart';
 import '../models/customer.dart';
 
 class CustomersScreen extends StatefulWidget {
@@ -9,7 +10,7 @@ class CustomersScreen extends StatefulWidget {
 }
 
 class _CustomersScreenState extends State<CustomersScreen> {
-  final List<Customer> customers = [];
+  final AppData appData = AppData.instance;
 
   void showCustomerDialog({Customer? existingCustomer}) {
     final nameController =
@@ -86,14 +87,14 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
                 setState(() {
                   if (existingCustomer == null) {
-                    customers.add(customer);
+                    appData.addCustomer(customer);
                   } else {
-                    final index = customers.indexWhere(
+                    final index = appData.customers.indexWhere(
                       (item) => item.id == existingCustomer.id,
                     );
 
                     if (index != -1) {
-                      customers[index] = customer;
+                      appData.customers[index] = customer;
                     }
                   }
                 });
@@ -112,7 +113,7 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
   void deleteCustomer(Customer customer) {
     setState(() {
-      customers.removeWhere(
+      appData.customers.removeWhere(
         (item) => item.id == customer.id,
       );
     });
@@ -120,6 +121,8 @@ class _CustomersScreenState extends State<CustomersScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final customers = appData.customers;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
