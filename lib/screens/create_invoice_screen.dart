@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../data/app_data.dart';
 import '../models/item.dart';
 import '../models/invoice_item.dart';
 
@@ -6,36 +7,16 @@ class CreateInvoiceScreen extends StatefulWidget {
   const CreateInvoiceScreen({super.key});
 
   @override
-  State<CreateInvoiceScreen> createState() => _CreateInvoiceScreenState();
+  State<CreateInvoiceScreen> createState() =>
+      _CreateInvoiceScreenState();
 }
 
-class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
+class _CreateInvoiceScreenState
+    extends State<CreateInvoiceScreen> {
+  final AppData appData = AppData.instance;
+
   final customerController = TextEditingController();
   final discountController = TextEditingController();
-
-  final List<Item> inventory = [
-    Item(
-      id: '1',
-      name: 'Sample Earbuds',
-      categoryId: '2',
-      price: 1200,
-      stock: 20,
-    ),
-    Item(
-      id: '2',
-      name: 'Data Cable',
-      categoryId: '2',
-      price: 500,
-      stock: 30,
-    ),
-    Item(
-      id: '3',
-      name: 'Watch',
-      categoryId: '3',
-      price: 1800,
-      stock: 10,
-    ),
-  ];
 
   final List<InvoiceItem> invoiceItems = [];
 
@@ -47,7 +28,10 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   double get discount {
-    return double.tryParse(discountController.text) ?? 0;
+    return double.tryParse(
+          discountController.text.trim(),
+        ) ??
+        0;
   }
 
   double get grandTotal {
@@ -89,11 +73,17 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   void increaseQuantity(int index) {
     final current = invoiceItems[index];
 
-    final stockItem = inventory.firstWhere(
+    final stockIndex = appData.items.indexWhere(
       (item) => item.id == current.itemId,
     );
 
-    if (current.quantity >= stockItem.stock) return;
+    if (stockIndex == -1) return;
+
+    final stockItem = appData.items[stockIndex];
+
+    if (current.quantity >= stockItem.stock) {
+      return;
+    }
 
     setState(() {
       invoiceItems[index] = InvoiceItem(
@@ -125,6 +115,17 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
   }
 
   void showItemSelector() {
+    if (appData.items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text(
+            'No inventory items available. Add items first.',
+          ),
+        ),
+      );
+      return;
+    }
+
     showModalBottomSheet(
       context: context,
       isScrollControlled: true,
@@ -147,13 +148,15 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                 const Divider(height: 1),
                 Expanded(
                   child: ListView.builder(
-                    itemCount: inventory.length,
+                    itemCount: appData.items.length,
                     itemBuilder: (context, index) {
-                      final item = inventory[index];
+                      final item = appData.items[index];
 
                       return ListTile(
                         leading: const CircleAvatar(
-                          child: Icon(Icons.inventory_2_outlined),
+                          child: Icon(
+                            Icons.inventory_2_outlined,
+                          ),
                         ),
                         title: Text(
                           item.name,
@@ -170,10 +173,13 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                             fontWeight: FontWeight.bold,
                           ),
                         ),
-                        onTap: () {
-                          addItem(item);
-                          Navigator.pop(context);
-                        },
+                        enabled: item.stock > 0,
+                        onTap: item.stock > 0
+                            ? () {
+                                addItem(item);
+                                Navigator.pop(context);
+                              }
+                            : null,
                       );
                     },
                   ),
@@ -196,12 +202,21 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
       return;
     }
 
+    final customerName =
+        customerController.text.trim().isEmpty
+            ? 'Walk-in Customer'
+            : customerController.text.trim();
+
     ScaffoldMessenger.of(context).showSnackBar(
       SnackBar(
         content: Text(
-          'Invoice saved — Total: Rs ${grandTotal.toStringAsFixed(0)}',
+          'Invoice ready — Total: Rs ${grandTotal.toStringAsFixed(0)}',
         ),
       ),
+    );
+
+    debugPrint(
+      'Invoice for $customerName: Rs ${grandTotal.toStringAsFixed(0)}',
     );
   }
 
@@ -227,34 +242,34 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
             child: SingleChildScrollView(
               padding: const EdgeInsets.all(16),
               child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment:
+                    CrossAxisAlignment.start,
                 children: [
                   TextField(
                     controller: customerController,
                     decoration: const InputDecoration(
                       labelText: 'Customer Name',
-                      prefixIcon: Icon(Icons.person_outline),
+                      prefixIcon:
+                          Icon(Icons.person_outline),
                       border: OutlineInputBorder(),
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   SizedBox(
                     width: double.infinity,
                     height: 52,
                     child: FilledButton.icon(
                       onPressed: showItemSelector,
-                      icon: const Icon(Icons.add_shopping_cart),
+                      icon: const Icon(
+                        Icons.add_shopping_cart,
+                      ),
                       label: const Text(
                         'Select Item',
                         style: TextStyle(fontSize: 16),
                       ),
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   const Text(
                     'Invoice Items',
                     style: TextStyle(
@@ -262,9 +277,7 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                       fontWeight: FontWeight.bold,
                     ),
                   ),
-
                   const SizedBox(height: 10),
-
                   if (invoiceItems.isEmpty)
                     const Card(
                       child: Padding(
@@ -287,9 +300,11 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                         final item = entry.value;
 
                         return Card(
-                          margin: const EdgeInsets.only(bottom: 10),
+                          margin:
+                              const EdgeInsets.only(bottom: 10),
                           child: Padding(
-                            padding: const EdgeInsets.all(12),
+                            padding:
+                                const EdgeInsets.all(12),
                             child: Row(
                               children: [
                                 const CircleAvatar(
@@ -298,7 +313,6 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                   ),
                                 ),
                                 const SizedBox(width: 12),
-
                                 Expanded(
                                   child: Column(
                                     crossAxisAlignment:
@@ -306,44 +320,54 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                                     children: [
                                       Text(
                                         item.itemName,
-                                        style: const TextStyle(
-                                          fontWeight: FontWeight.bold,
+                                        style:
+                                            const TextStyle(
+                                          fontWeight:
+                                              FontWeight.bold,
                                         ),
                                       ),
                                       const SizedBox(height: 4),
                                       Text(
                                         'Rs ${item.price.toStringAsFixed(0)} × ${item.quantity}',
                                         style: TextStyle(
-                                          color: Colors.grey.shade600,
+                                          color: Colors
+                                              .grey.shade600,
                                         ),
                                       ),
                                     ],
                                   ),
                                 ),
-
                                 Row(
                                   children: [
                                     IconButton(
                                       onPressed: () {
-                                        decreaseQuantity(index);
+                                        decreaseQuantity(
+                                          index,
+                                        );
                                       },
                                       icon: const Icon(
-                                        Icons.remove_circle_outline,
+                                        Icons
+                                            .remove_circle_outline,
                                       ),
                                     ),
                                     Text(
                                       '${item.quantity}',
-                                      style: const TextStyle(
-                                        fontWeight: FontWeight.bold,
+                                      style:
+                                          const TextStyle(
+                                        fontWeight:
+                                            FontWeight.bold,
                                         fontSize: 17,
                                       ),
                                     ),
                                     IconButton(
                                       onPressed: () {
-                                        increaseQuantity(index);
+                                        increaseQuantity(
+                                          index,
+                                        );
                                       },
                                       icon: const Icon(
-                                        Icons.add_circle_outline,
+                                        Icons
+                                            .add_circle_outline,
                                       ),
                                     ),
                                   ],
@@ -354,23 +378,23 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
                         );
                       },
                     ),
-
                   const SizedBox(height: 10),
-
                   TextField(
                     controller: discountController,
-                    keyboardType: TextInputType.number,
+                    keyboardType:
+                        const TextInputType.numberWithOptions(
+                      decimal: true,
+                    ),
                     onChanged: (_) => setState(() {}),
                     decoration: const InputDecoration(
                       labelText: 'Invoice Discount',
                       prefixText: 'Rs ',
-                      prefixIcon: Icon(Icons.discount_outlined),
+                      prefixIcon:
+                          Icon(Icons.discount_outlined),
                       border: OutlineInputBorder(),
                     ),
                   ),
-
                   const SizedBox(height: 20),
-
                   Card(
                     child: Padding(
                       padding: const EdgeInsets.all(16),
@@ -399,9 +423,9 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
               ),
             ),
           ),
-
           Container(
-            padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+            padding:
+                const EdgeInsets.fromLTRB(16, 10, 16, 16),
             child: SizedBox(
               width: double.infinity,
               height: 55,
@@ -426,13 +450,15 @@ class _CreateInvoiceScreenState extends State<CreateInvoiceScreen> {
     bool bold = false,
   }) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      mainAxisAlignment:
+          MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
           style: TextStyle(
             fontSize: bold ? 19 : 16,
-            fontWeight: bold ? FontWeight.bold : FontWeight.normal,
+            fontWeight:
+                bold ? FontWeight.bold : FontWeight.normal,
           ),
         ),
         Text(
