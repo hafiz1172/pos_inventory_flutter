@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'items_screen.dart';
 
 void main() {
   runApp(const POSApp());
@@ -33,7 +34,6 @@ class DashboardScreen extends StatelessWidget {
           'POS & Inventory',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
-        centerTitle: false,
       ),
       body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
@@ -52,7 +52,6 @@ class DashboardScreen extends StatelessWidget {
               'Manage your business easily',
               style: TextStyle(
                 color: Colors.grey.shade600,
-                fontSize: 15,
               ),
             ),
             const SizedBox(height: 20),
@@ -60,20 +59,20 @@ class DashboardScreen extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: _dashboardCard(
-                    icon: Icons.inventory_2_outlined,
-                    title: 'Items',
-                    value: '0',
-                    color: Colors.indigo,
+                  child: dashboardCard(
+                    Icons.inventory_2_outlined,
+                    'Items',
+                    '0',
+                    Colors.indigo,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _dashboardCard(
-                    icon: Icons.receipt_long_outlined,
-                    title: 'Invoices',
-                    value: '0',
-                    color: Colors.green,
+                  child: dashboardCard(
+                    Icons.receipt_long_outlined,
+                    'Invoices',
+                    '0',
+                    Colors.green,
                   ),
                 ),
               ],
@@ -84,20 +83,20 @@ class DashboardScreen extends StatelessWidget {
             Row(
               children: [
                 Expanded(
-                  child: _dashboardCard(
-                    icon: Icons.shopping_cart_outlined,
-                    title: 'Sales',
-                    value: 'Rs 0',
-                    color: Colors.orange,
+                  child: dashboardCard(
+                    Icons.shopping_cart_outlined,
+                    'Sales',
+                    'Rs 0',
+                    Colors.orange,
                   ),
                 ),
                 const SizedBox(width: 12),
                 Expanded(
-                  child: _dashboardCard(
-                    icon: Icons.category_outlined,
-                    title: 'Categories',
-                    value: '0',
-                    color: Colors.purple,
+                  child: dashboardCard(
+                    Icons.category_outlined,
+                    'Categories',
+                    '0',
+                    Colors.purple,
                   ),
                 ),
               ],
@@ -115,62 +114,67 @@ class DashboardScreen extends StatelessWidget {
 
             const SizedBox(height: 14),
 
-            _actionButton(
-              context,
-              Icons.add_shopping_cart,
-              'Create Invoice',
+            SizedBox(
+              width: double.infinity,
+              height: 58,
+              child: FilledButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.add_shopping_cart),
+                label: const Text(
+                  'Create Invoice',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
             ),
 
             const SizedBox(height: 10),
 
-            _actionButton(
-              context,
-              Icons.inventory_2,
-              'Manage Inventory',
+            SizedBox(
+              width: double.infinity,
+              height: 58,
+              child: FilledButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const ItemsScreen(),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.inventory_2),
+                label: const Text(
+                  'Manage Inventory',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
             ),
 
             const SizedBox(height: 10),
 
-            _actionButton(
-              context,
-              Icons.history,
-              'Invoice History',
+            SizedBox(
+              width: double.infinity,
+              height: 58,
+              child: FilledButton.icon(
+                onPressed: () {},
+                icon: const Icon(Icons.history),
+                label: const Text(
+                  'Invoice History',
+                  style: TextStyle(fontSize: 16),
+                ),
+              ),
             ),
           ],
         ),
       ),
-
-      bottomNavigationBar: NavigationBar(
-        selectedIndex: 0,
-        destinations: const [
-          NavigationDestination(
-            icon: Icon(Icons.dashboard_outlined),
-            selectedIcon: Icon(Icons.dashboard),
-            label: 'Dashboard',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.inventory_2_outlined),
-            label: 'Items',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.receipt_long_outlined),
-            label: 'Invoices',
-          ),
-          NavigationDestination(
-            icon: Icon(Icons.settings_outlined),
-            label: 'Settings',
-          ),
-        ],
-      ),
     );
   }
 
-  Widget _dashboardCard({
-    required IconData icon,
-    required String title,
-    required String value,
-    required Color color,
-  }) {
+  Widget dashboardCard(
+    IconData icon,
+    String title,
+    String value,
+    Color color,
+  ) {
     return Card(
       elevation: 0,
       child: Padding(
@@ -195,28 +199,6 @@ class DashboardScreen extends StatelessWidget {
               ),
             ),
           ],
-        ),
-      ),
-    );
-  }
-
-  Widget _actionButton(
-    BuildContext context,
-    IconData icon,
-    String title,
-  ) {
-    return SizedBox(
-      width: double.infinity,
-      height: 58,
-      child: FilledButton.icon(
-        onPressed: () {},
-        icon: Icon(icon),
-        label: Text(
-          title,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w600,
-          ),
         ),
       ),
     );
