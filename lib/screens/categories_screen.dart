@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../data/app_data.dart';
 import '../models/category.dart';
 
 class CategoriesScreen extends StatefulWidget {
@@ -9,7 +10,7 @@ class CategoriesScreen extends StatefulWidget {
 }
 
 class _CategoriesScreenState extends State<CategoriesScreen> {
-  final List<Category> categories = [];
+  final AppData appData = AppData.instance;
 
   void addCategory() {
     final controller = TextEditingController();
@@ -40,9 +41,11 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
                 if (name.isEmpty) return;
 
                 setState(() {
-                  categories.add(
+                  appData.addCategory(
                     Category(
-                      id: DateTime.now().millisecondsSinceEpoch.toString(),
+                      id: DateTime.now()
+                          .millisecondsSinceEpoch
+                          .toString(),
                       name: name,
                     ),
                   );
@@ -60,12 +63,14 @@ class _CategoriesScreenState extends State<CategoriesScreen> {
 
   void deleteCategory(int index) {
     setState(() {
-      categories.removeAt(index);
+      appData.categories.removeAt(index);
     });
   }
 
   @override
   Widget build(BuildContext context) {
+    final categories = appData.categories;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
