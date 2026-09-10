@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
-import 'models/item.dart';
+import 'data/app_data.dart';
 import 'models/category.dart';
+import 'models/item.dart';
 
 class ItemsScreen extends StatefulWidget {
   const ItemsScreen({super.key});
@@ -10,34 +11,29 @@ class ItemsScreen extends StatefulWidget {
 }
 
 class _ItemsScreenState extends State<ItemsScreen> {
-  final List<Category> categories = [
-    Category(id: '1', name: 'General'),
-    Category(id: '2', name: 'Electronics'),
-    Category(id: '3', name: 'Accessories'),
-  ];
-
-  final List<Item> items = [];
+  final AppData appData = AppData.instance;
 
   void showItemDialog({Item? existingItem}) {
     final nameController =
         TextEditingController(text: existingItem?.name ?? '');
     final priceController = TextEditingController(
-      text: existingItem != null ? existingItem.price.toString() : '',
+      text: existingItem == null
+          ? ''
+          : existingItem.price.toStringAsFixed(0),
     );
     final stockController = TextEditingController(
-      text: existingItem != null ? existingItem.stock.toString() : '',
+      text: existingItem == null ? '' : '${existingItem.stock}',
     );
     final unitController =
         TextEditingController(text: existingItem?.unit ?? 'pcs');
 
-    String selectedCategoryId =
-        existingItem?.categoryId ?? categories.first.id;
+    String? categoryId = existingItem?.categoryId;
 
     showDialog(
       context: context,
       builder: (context) {
         return StatefulBuilder(
-          builder: (context, setDialogState) {
+          builder: (context, dialogSetState) {
             return AlertDialog(
               title: Text(
                 existingItem == null ? 'Add Item' : 'Edit Item',
@@ -55,61 +51,69 @@ class _ItemsScreenState extends State<ItemsScreen> {
                       ),
                     ),
                     const SizedBox(height: 12),
-
                     DropdownButtonFormField<String>(
-                      value: selectedCategoryId,
+                      value: appData.categories.any(
+                        (category) => category.id == categoryId,
+                      )
+                          ? categoryId
+                          : null,
                       decoration: const InputDecoration(
                         labelText: 'Category',
                         prefixIcon: Icon(Icons.category_outlined),
                         border: OutlineInputBorder(),
                       ),
-                      items: categories.map((category) {
-                        return DropdownMenuItem(
-                          value: category.id,
-                          child: Text(category.name),
-                        );
-                      }).toList(),
+                      items: appData.categories.map(
+                        (category) {
+                          return DropdownMenuItem<String>(
+                            value: category.id,
+                            child: Text(category.name),
+                          );
+                        },
+                      ).toList(),
                       onChanged: (value) {
-                        if (value != null) {
-                          setDialogState(() {
-                            selectedCategoryId = value;
-                          });
-                        }
+                        dialogSetState(() {
+                          categoryId = value;
+                        });
                       },
                     ),
-
+                    if (appData.categories.isEmpty)
+                      const Padding(
+                        padding: EdgeInsets.only(top: 8),
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            'Add a category first.',
+                            style: TextStyle(color: Colors.grey),
+                          ),
+                        ),
+                      ),
                     const SizedBox(height: 12),
-
                     TextField(
                       controller: priceController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
                         labelText: 'Selling Price',
                         prefixText: 'Rs ',
+                        prefixIcon: Icon(Icons.payments_outlined),
                         border: OutlineInputBorder(),
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     TextField(
                       controller: stockController,
                       keyboardType: TextInputType.number,
                       decoration: const InputDecoration(
                         labelText: 'Stock',
-                        prefixIcon: Icon(Icons.numbers),
+                        prefixIcon: Icon(Icons.inventory_outlined),
                         border: OutlineInputBorder(),
                       ),
                     ),
-
                     const SizedBox(height: 12),
-
                     TextField(
                       controller: unitController,
                       decoration: const InputDecoration(
                         labelText: 'Unit',
-                        hintText: 'pcs, box, kg, etc.',
-                        prefixIcon: Icon(Icons.straighten),
+                        prefixIcon: Icon(Icons.straighten_outlined),
                         border: OutlineInputBorder(),
                       ),
                     ),
@@ -130,38 +134,41 @@ class _ItemsScreenState extends State<ItemsScreen> {
                         int.tryParse(stockController.text.trim());
                     final unit = unitController.text.trim();
 
-                    if (name.isEmpty || price == null || stock == null) {
+                    if (name.isEmpty ||
+                        price == null ||
+                        stock == null ||
+                        price < 0 ||
+                        stock < 0) {
                       return;
                     }
 
+                    if (appData.categories.isNotEmpty &&
+                        categoryId == null) {
+                      return;
+                    }
+
+                    final item = Item(
+                      id: existingItem?.id ??
+                          DateTime.now()
+                              .millisecondsSinceEpoch
+                              .toString(),
+                      name: name,
+                      categoryId: categoryId ?? '',
+                      price: price,
+                      stock: stock,
+                      unit: unit.isEmpty ? 'pcs' : unit,
+                    );
+
                     setState(() {
                       if (existingItem == null) {
-                        items.add(
-                          Item(
-                            id: DateTime.now()
-                                .millisecondsSinceEpoch
-                                .toString(),
-                            name: name,
-                            categoryId: selectedCategoryId,
-                            price: price,
-                            stock: stock,
-                            unit: unit.isEmpty ? 'pcs' : unit,
-                          ),
-                        );
+                        appData.addItem(item);
                       } else {
-                        final index = items.indexWhere(
-                          (item) => item.id == existingItem.id,
+                        final index = appData.items.indexWhere(
+                          (oldItem) => oldItem.id == existingItem.id,
                         );
 
                         if (index != -1) {
-                          items[index] = Item(
-                            id: existingItem.id,
-                            name: name,
-                            categoryId: selectedCategoryId,
-                            price: price,
-                            stock: stock,
-                            unit: unit.isEmpty ? 'pcs' : unit,
-                          );
+                          appData.items[index] = item;
                         }
                       }
                     });
@@ -182,21 +189,28 @@ class _ItemsScreenState extends State<ItemsScreen> {
 
   void deleteItem(Item item) {
     setState(() {
-      items.removeWhere((element) => element.id == item.id);
+      appData.items.removeWhere(
+        (oldItem) => oldItem.id == item.id,
+      );
     });
   }
 
-  String getCategoryName(String categoryId) {
-    final category = categories.firstWhere(
+  String categoryName(String categoryId) {
+    final index = appData.categories.indexWhere(
       (category) => category.id == categoryId,
-      orElse: () => categories.first,
     );
 
-    return category.name;
+    if (index == -1) {
+      return 'Uncategorized';
+    }
+
+    return appData.categories[index].name;
   }
 
   @override
   Widget build(BuildContext context) {
+    final items = appData.items;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -224,7 +238,7 @@ class _ItemsScreenState extends State<ItemsScreen> {
                   ),
                   SizedBox(height: 6),
                   Text(
-                    'Add your first inventory item',
+                    'Add products to your inventory',
                     style: TextStyle(color: Colors.grey),
                   ),
                 ],
@@ -239,16 +253,8 @@ class _ItemsScreenState extends State<ItemsScreen> {
                 return Card(
                   margin: const EdgeInsets.only(bottom: 10),
                   child: ListTile(
-                    contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16,
-                      vertical: 6,
-                    ),
-                    leading: CircleAvatar(
-                      child: Text(
-                        item.name.isNotEmpty
-                            ? item.name[0].toUpperCase()
-                            : '?',
-                      ),
+                    leading: const CircleAvatar(
+                      child: Icon(Icons.inventory_2_outlined),
                     ),
                     title: Text(
                       item.name,
@@ -257,42 +263,25 @@ class _ItemsScreenState extends State<ItemsScreen> {
                       ),
                     ),
                     subtitle: Text(
-                      '${getCategoryName(item.categoryId)} • '
+                      '${categoryName(item.categoryId)} • '
                       'Stock: ${item.stock} ${item.unit}',
                     ),
-                    trailing: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      crossAxisAlignment: CrossAxisAlignment.end,
-                      children: [
-                        Text(
-                          'Rs ${item.price.toStringAsFixed(0)}',
-                          style: const TextStyle(
-                            fontWeight: FontWeight.bold,
-                            fontSize: 16,
-                          ),
+                    trailing: PopupMenuButton<String>(
+                      onSelected: (value) {
+                        if (value == 'edit') {
+                          showItemDialog(existingItem: item);
+                        } else if (value == 'delete') {
+                          deleteItem(item);
+                        }
+                      },
+                      itemBuilder: (context) => const [
+                        PopupMenuItem(
+                          value: 'edit',
+                          child: Text('Edit'),
                         ),
-                        Row(
-                          mainAxisSize: MainAxisSize.min,
-                          children: [
-                            IconButton(
-                              icon: const Icon(
-                                Icons.edit_outlined,
-                                size: 20,
-                              ),
-                              onPressed: () {
-                                showItemDialog(existingItem: item);
-                              },
-                            ),
-                            IconButton(
-                              icon: const Icon(
-                                Icons.delete_outline,
-                                size: 20,
-                              ),
-                              onPressed: () {
-                                deleteItem(item);
-                              },
-                            ),
-                          ],
+                        PopupMenuItem(
+                          value: 'delete',
+                          child: Text('Delete'),
                         ),
                       ],
                     ),
