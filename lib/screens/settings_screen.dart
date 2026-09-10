@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import '../data/app_data.dart';
 import '../models/business_settings.dart';
 
 class SettingsScreen extends StatefulWidget {
@@ -9,13 +10,13 @@ class SettingsScreen extends StatefulWidget {
 }
 
 class _SettingsScreenState extends State<SettingsScreen> {
+  final AppData appData = AppData.instance;
+
   final businessNameController = TextEditingController();
   final phoneController = TextEditingController();
   final addressController = TextEditingController();
 
   String currency = 'Rs';
-
-  BusinessSettings? settings;
 
   void saveSettings() {
     final name = businessNameController.text.trim();
@@ -32,11 +33,13 @@ class _SettingsScreenState extends State<SettingsScreen> {
     }
 
     setState(() {
-      settings = BusinessSettings(
-        businessName: name,
-        phone: phone,
-        address: address,
-        currency: currency,
+      appData.updateBusinessSettings(
+        BusinessSettings(
+          businessName: name,
+          phone: phone,
+          address: address,
+          currency: currency,
+        ),
       );
     });
 
@@ -57,6 +60,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final settings = appData.businessSettings;
+
     return Scaffold(
       appBar: AppBar(
         title: const Text(
@@ -76,18 +81,14 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 fontWeight: FontWeight.bold,
               ),
             ),
-
             const SizedBox(height: 6),
-
             Text(
               'This information will be used on invoices.',
               style: TextStyle(
                 color: Colors.grey.shade600,
               ),
             ),
-
             const SizedBox(height: 24),
-
             TextField(
               controller: businessNameController,
               decoration: const InputDecoration(
@@ -96,9 +97,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 14),
-
             TextField(
               controller: phoneController,
               keyboardType: TextInputType.phone,
@@ -108,9 +107,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 14),
-
             TextField(
               controller: addressController,
               maxLines: 2,
@@ -120,9 +117,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 border: OutlineInputBorder(),
               ),
             ),
-
             const SizedBox(height: 14),
-
             DropdownButtonFormField<String>(
               value: currency,
               decoration: const InputDecoration(
@@ -156,9 +151,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 }
               },
             ),
-
             const SizedBox(height: 28),
-
             SizedBox(
               width: double.infinity,
               height: 55,
@@ -171,10 +164,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
                 ),
               ),
             ),
-
             if (settings != null) ...[
               const SizedBox(height: 30),
-
               Card(
                 child: Padding(
                   padding: const EdgeInsets.all(16),
@@ -189,36 +180,31 @@ class _SettingsScreenState extends State<SettingsScreen> {
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-
                       const SizedBox(height: 14),
-
                       Text(
-                        settings!.businessName,
+                        settings.businessName,
                         style: const TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-
-                      if (settings!.phone.isNotEmpty)
+                      if (settings.phone.isNotEmpty)
                         Padding(
                           padding:
                               const EdgeInsets.only(top: 6),
-                          child: Text(settings!.phone),
+                          child: Text(settings.phone),
                         ),
-
-                      if (settings!.address.isNotEmpty)
+                      if (settings.address.isNotEmpty)
                         Padding(
                           padding:
                               const EdgeInsets.only(top: 6),
-                          child: Text(settings!.address),
+                          child: Text(settings.address),
                         ),
-
                       Padding(
                         padding:
                             const EdgeInsets.only(top: 6),
                         child: Text(
-                          'Currency: ${settings!.currency}',
+                          'Currency: ${settings.currency}',
                         ),
                       ),
                     ],
